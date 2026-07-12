@@ -1,0 +1,73 @@
+name: 'Strudel Release'
+description: 'Release a macOS strudel app.'
+
+inputs:
+  # config
+  strudel-version:
+    description: 'Strudel release tag to install. Defaults to the latest release.'
+    required: false
+    default: ''
+  apple-team-id:
+    description: 'Apple team ID'
+    required: true
+  apple-api-issuer:
+    description: 'App Store Connect API issuer ID'
+    required: true
+  apple-api-key:
+    description: 'App Store Connect API key ID'
+    required: true
+
+  # secrets
+  apple-api-key-contents:
+    description: 'Contents of the App Store Connect API key (.p8)'
+    required: true
+  apple-certificate:
+    description: 'Base64-encoded Apple signing certificate'
+    required: true
+  apple-certificate-password:
+    description: 'Password for the Apple signing certificate'
+    required: true
+
+outputs:
+  dmg-path:
+    description: 'Path to the built DMG'
+    value: ${{ steps.dmg.outputs.path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install strudel
+      shell: bash
+      env:
+        STRUDEL_VERSION: ${{ inputs.strudel-version }}
+      run: |
+        if [ -z "$STRUDEL_VERSION" ]; then
+          STRUDEL_VERSION="$(curl -fsSL https://api.github.com/repos/octavore/strudel/releases/latest | jq -r .tag_name)"
+        fi
+        asset="https://github.com/octavore/strudel/releases/download/${STRUDEL_VERSION}/strudel-${STRUDEL_VERSION}-aarch64-apple-darwin.tar.gz"
+        curl -fsSL "$asset" -o strudel.tar.gz
+        tar -xzf strudel.tar.gz
+        install -m 755 strudel /usr/local/bin/strudel
+        strudel --version
+
+    - name: Write App Store Connect API key
+      shell: bash
+      env:
+        APPLE_API_KEY_CONTENTS: ${{ inputs.apple-api-key-contents }}
+      run: echo "$APPLE_API_KEY_CONTENTS" > AuthKey.p8
+
+    - name: Release
+      shell: bash
+      env:
+        APPLE_CERTIFICATE: ${{ inputs.apple-certificate }}
+        APPLE_CERTIFICATE_PASSWORD: ${{ inputs.apple-certificate-password }}
+        APPLE_TEAM_ID: ${{ inputs.apple-team-id }}
+        APPLE_API_ISSUER: ${{ inputs.apple-api-issuer }}
+        APPLE_API_KEY: ${{ inputs.apple-api-key }}
+        APPLE_API_KEY_PATH: AuthKey.p8
+      run: strudel release
+
+    - name: Locate DMG
+      id: dmg
+      shell: bash
+      run: echo "path=$(find .build/dist -name '*.dmg' -print -quit)" >> "$GITHUB_OUTPUT"
