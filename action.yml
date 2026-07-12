@@ -73,7 +73,10 @@ runs:
       id: dmg
       shell: bash
       run: |
-        mapfile -t dmgs < <(find .build/dist -name '*.dmg')
+        dmgs=()
+        while IFS= read -r -d '' f; do
+          dmgs+=("$f")
+        done < <(find .build/dist -name '*.dmg' -print0)
         if [ "${#dmgs[@]}" -eq 0 ]; then
           echo "::error::No .dmg found in .build/dist" >&2
           exit 1
