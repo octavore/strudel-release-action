@@ -67,7 +67,7 @@ runs:
         APPLE_TEAM_ID: ${{ inputs.apple-team-id }}
         APPLE_API_ISSUER: ${{ inputs.apple-api-issuer }}
         APPLE_API_KEY: ${{ inputs.apple-api-key }}
-      run: strudel release
+      run: strudel release --ci
 
     - name: Locate DMG
       id: dmg
