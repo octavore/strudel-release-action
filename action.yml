@@ -44,6 +44,10 @@ runs:
         if [ -z "$STRUDEL_VERSION" ]; then
           STRUDEL_VERSION="$(curl -fsSL https://api.github.com/repos/octavore/strudel/releases/latest | jq -r .tag_name)"
         fi
+        case "$STRUDEL_VERSION" in
+          v*) ;;
+          *) STRUDEL_VERSION="v${STRUDEL_VERSION}" ;;
+        esac
         asset="https://github.com/octavore/strudel/releases/download/${STRUDEL_VERSION}/strudel-${STRUDEL_VERSION}-aarch64-apple-darwin.tar.gz"
         curl -fsSL "$asset" -o strudel.tar.gz
         tar -xzf strudel.tar.gz
