@@ -72,7 +72,16 @@ runs:
     - name: Locate DMG
       id: dmg
       shell: bash
-      run: echo "path=$(find .build/dist -name '*.dmg' -print -quit)" >> "$GITHUB_OUTPUT"
+      run: |
+        mapfile -t dmgs < <(find .build/dist -name '*.dmg')
+        if [ "${#dmgs[@]}" -eq 0 ]; then
+          echo "::error::No .dmg found in .build/dist" >&2
+          exit 1
+        elif [ "${#dmgs[@]}" -gt 1 ]; then
+          echo "::error::Expected exactly one .dmg in .build/dist, found ${#dmgs[@]}: ${dmgs[*]}" >&2
+          exit 1
+        fi
+        echo "path=${dmgs[0]}" >> "$GITHUB_OUTPUT"
 
     - name: Clean up API key
       if: always()
